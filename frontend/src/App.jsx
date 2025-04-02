@@ -15,7 +15,7 @@ import LearningPlanDetail from './components/learning/LearningPlanDetail';
 import LearningPlanForm from './components/learning/LearningPlanForm';
 import EditProfile from './components/user/EditProfile';
 import NotFound from './components/common/NotFound';
-
+import Footer from './components/Footer'
 const App = () => {
   return (
     <Router>
@@ -70,6 +70,7 @@ const App = () => {
           </Routes>
         </Container>
       </main>
+      <Footer/>
     </Router>
   );
 };

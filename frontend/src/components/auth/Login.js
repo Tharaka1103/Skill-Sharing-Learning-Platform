@@ -35,7 +35,7 @@ const Login = () => {
           return;
         }
         
-        navigate('/feed');
+        navigate('/');
       } else {
         setError('Token not found in response');
         console.error("Token not found in response:", response.data);

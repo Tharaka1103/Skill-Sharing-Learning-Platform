@@ -62,9 +62,11 @@ export const getCurrentUser = () => {
 export const getUserProfile = (username) => {
   return api.get(`/users/${username}`);
 };
-export const updateUserProfile = (userData) => {
-  return api.put('/users/me', userData);
+
+export const updateUserProfile = (profileData) => {
+  return api.put('/users/me', profileData);  // Change to '/users/me'
 };
+
 
 export const followUser = (userId) => {
   return api.post(`/users/${userId}/follow`);
