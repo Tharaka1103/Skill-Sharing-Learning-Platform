@@ -1,0 +1,154 @@
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:4000/api';
+
+// Create axios instance
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Important for cookies/sessions
+});
+
+// Add a request interceptor for authentication
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+
+// Auth API service
+export const authApi = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/signup', userData),
+  logout: () => api.post('/auth/logout'),
+  getCurrentUser: () => api.get(`/auth/me`),
+};
+
+// User API service
+export const userApi = {
+  updateUser: (userData) => {
+    // If userData is FormData, don't set content-type (browser will set it with boundary)
+    const headers = userData instanceof FormData ? {} : { 'Content-Type': 'application/json' };
+    return api.put('/users/profile', userData, { headers });
+  },
+  updateProfilePicture: (file) => {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    return api.post('/users/profile/picture', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  updateCoverPicture: (file) => {
+    const formData = new FormData();
+    formData.append('coverPhoto', file);
+    return api.post('/users/profile/cover', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getUser: (userId) => api.get(`/users/me`),
+  getUserById: (userId) => api.get(`/users/${userId}`),
+  updateUser: (userData) => api.put('/users/profile', userData),
+  followUser: (userId) => api.post(`/users/${userId}/follow`),
+  unfollowUser: (userId) => api.delete(`/users/${userId}/follow`),
+  getSuggestedUsers: () => api.get('/users/suggested'),
+  getFollowers: (userId) => api.get(`/users/${userId}/followers`),
+  getFollowing: (userId) => api.get(`/users/${userId}/following`),
+};
+
+// Post API service
+export const postApi = {
+  createPost: (postData) => {
+    const formData = new FormData();
+    formData.append('content', postData.content);
+    
+    // Convert skills array to single skillCategory string if available
+    const skillCategory = postData.skills && postData.skills.length > 0 
+      ? postData.skills.join(', ') 
+      : '';
+    formData.append('skillCategory', skillCategory);
+    
+    // Handle files if they exist
+    if (postData.files && postData.files.length > 0) {
+      for (let i = 0; i < postData.files.length; i++) {
+        formData.append('files', postData.files[i]);
+      }
+    }
+    
+    return api.post('/posts', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getPost: (postId) => api.get(`/posts/${postId}`),
+  updatePost: (postId, postData) => api.put(`/posts/${postId}`, postData),
+  deletePost: (postId) => api.delete(`/posts/${postId}`),
+  getFeed: () => api.get('/posts/feed'),
+  getExploreFeed: () => api.get('/posts/explore'),
+  getUserPosts: (userId) => api.get(`/posts/user/${userId}`),
+  likePost: (postId) => api.post(`/posts/${postId}/like`),
+  unlikePost: (postId) => api.post(`/posts/${postId}/unlike`),
+  savePost: (postId) => api.post(`/posts/${postId}/save`),
+  unsavePost: (postId) => api.delete(`/posts/${postId}/save`),
+  getSavedPosts: () => api.get('/users/me/saved-posts'),
+  getComments: (postId) => {
+    console.log(`Getting comments for post ${postId}`);
+    return api.get(`/posts/${postId}/comments`);
+  },  
+  createComment: (postId, comment) => {
+    console.log(`Adding comment to post ${postId}:`, comment);
+    // Make sure we're sending the expected structure
+    const data = typeof comment === 'string' 
+      ? { content: comment } 
+      : comment;
+    
+    return api.post(`/posts/${postId}/comments`, data);
+  },
+  deleteComment: (postId, commentId) => {
+    console.log(`Deleting comment ${commentId} from post ${postId}`);
+    return api.delete(`/posts/${postId}/comments/${commentId}`);
+  },  
+  searchPosts: (query) => api.get('/posts/search', { params: { q: query } }),
+};
+
+// Comment API service
+export const commentApi = {
+  getComment: (commentId) => api.get(`/comments/${commentId}`),
+  updateComment: (commentId, commentData) => {
+    console.log(`Updating comment ${commentId}:`, commentData);
+    return api.put(`/comments/${commentId}`, commentData);
+  },
+  deleteComment: (commentId) => {
+    console.log(`Deleting comment ${commentId}`);
+    return api.delete(`/comments/${commentId}`);
+  }
+};
+
+// Learning Plan API service
+export const learningPlanApi = {
+  createPlan: (planData) => api.post('/learning-plans', planData),
+  getPlan: (planId) => api.get(`/learning-plans/${planId}`),
+  updatePlan: (planId, planData) => api.put(`/learning-plans/${planId}`, planData),
+  deletePlan: (planId) => api.delete(`/learning-plans/${planId}`),
+  getUserPlans: (userId) => api.get(`/users/${userId}/learning-plans`),
+  addPlanStep: (planId, stepData) => api.post(`/learning-plans/${planId}/steps`, stepData),
+  updatePlanStep: (planId, stepId, stepData) => api.put(`/learning-plans/${planId}/steps/${stepId}`, stepData),
+  deletePlanStep: (planId, stepId) => api.delete(`/learning-plans/${planId}/steps/${stepId}`),
+  reorderPlanStep: (planId, stepId, direction) => 
+    api.put(`/learning-plans/${planId}/steps/${stepId}/reorder`, { direction }),
+};
+
+// Skill API service
+export const skillApi = {
+  getTrendingSkills: () => api.get('/skills/trending'),
+  searchSkills: (query) => api.get('/skills/search', { params: { q: query } }),
+  getUserSkills: (userId) => api.get(`/users/${userId}/skills`),
+  addUserSkill: (skillName) => api.post('/users/me/skills', { name: skillName }),
+  removeUserSkill: (skillName) => api.delete(`/users/me/skills/${encodeURIComponent(skillName)}`),
+};
