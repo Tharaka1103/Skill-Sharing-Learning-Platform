@@ -113,6 +113,15 @@ public class PostController {
             @PathVariable String postId,
             @RequestBody PostDto postDto) {
 
+        // Get the existing post first
+        Post existingPost = postService.getPostById(postId);
+
+        // If no new media URLs are provided, preserve the existing ones
+        if (postDto.getMediaUrls() == null || postDto.getMediaUrls().isEmpty()) {
+            postDto.setMediaUrls(existingPost.getMediaUrls());
+        }
+
+        // Update the post
         Post post = postService.updatePost(currentUser.getUsername(), postId, postDto);
         enrichPostWithUserData(post);
         return ResponseEntity.ok(post);

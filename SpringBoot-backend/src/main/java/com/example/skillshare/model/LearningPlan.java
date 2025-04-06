@@ -18,9 +18,13 @@ public class LearningPlan {
     @Id
     private String id;
     private String userId;
+    private String userName;
+    private String userProfilePicture;
     private String title;
     private String description;
-    private String skill;
+    // Change from single skill to list of skills
+    private List<String> skills = new ArrayList<>();
+    private String skill; // Keep for backward compatibility
     private List<LearningStep> steps = new ArrayList<>();
     private Date deadline;
     private int progress = 0;

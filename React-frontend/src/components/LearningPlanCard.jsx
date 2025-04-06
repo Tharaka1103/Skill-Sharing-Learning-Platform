@@ -30,6 +30,7 @@ export default function LearningPlanCard({ learningPlan, isOwner = false }) {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['userLearningPlans']);
+        queryClient.invalidateQueries(['learningPlan']);
         setConfirmDelete(false);
       }
     }
@@ -132,15 +133,15 @@ export default function LearningPlanCard({ learningPlan, isOwner = false }) {
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-          {learningPlan.skills?.map(skill => (
+          {learningPlan.skill && (
             <Chip 
-              key={skill} 
-              label={skill} 
+              key={learningPlan.skill} 
+              label={learningPlan.skill} 
               size="small" 
               variant="outlined" 
               color="primary"
             />
-          ))}
+          )}
         </Box>
       </CardContent>
       

@@ -11,7 +11,8 @@ import java.util.List;
 public class LearningPlanDto {
     private String title;
     private String description;
-    private String skill;
+    private String skill; // Keep for backward compatibility
+    private List<String> skills = new ArrayList<>();
     private List<LearningStep> steps = new ArrayList<>();
     private Date deadline;
 }

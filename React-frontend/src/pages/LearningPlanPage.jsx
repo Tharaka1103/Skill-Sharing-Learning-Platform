@@ -1,9 +1,9 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Box, Typography, Paper, Button, Divider, List, ListItem,
   ListItemText, ListItemIcon, Checkbox, TextField, IconButton, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogActions, Alert
+  Dialog, DialogTitle, DialogContent, DialogActions, Alert, Chip
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -29,11 +29,14 @@ export default function LearningPlanPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addStepError, setAddStepError] = useState('');
 
-  const { data, isLoading } = useQuery(
+  const { data, isLoading, error } = useQuery(
     ['learningPlan', planId],
     () => learningPlanApi.getPlan(planId),
     {
       enabled: !!planId,
+      onError: (err) => {
+        console.error("Error fetching learning plan:", err);
+      }
     }
   );
 
@@ -42,6 +45,7 @@ export default function LearningPlanPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['learningPlan', planId]);
+        queryClient.invalidateQueries(['userLearningPlans']);
       }
     }
   );
@@ -51,6 +55,7 @@ export default function LearningPlanPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['learningPlan', planId]);
+        queryClient.invalidateQueries(['userLearningPlans']);
         setNewStep('');
         setAddStepError('');
       },
@@ -65,6 +70,7 @@ export default function LearningPlanPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['learningPlan', planId]);
+        queryClient.invalidateQueries(['userLearningPlans']);
         setEditingStep(null);
       }
     }
@@ -75,6 +81,7 @@ export default function LearningPlanPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['learningPlan', planId]);
+        queryClient.invalidateQueries(['userLearningPlans']);
       }
     }
   );
@@ -84,6 +91,7 @@ export default function LearningPlanPage() {
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['learningPlan', planId]);
+        queryClient.invalidateQueries(['userLearningPlans']);
       }
     }
   );
@@ -92,7 +100,8 @@ export default function LearningPlanPage() {
     () => learningPlanApi.deletePlan(planId),
     {
       onSuccess: () => {
-        navigate('/profile');
+        queryClient.invalidateQueries(['userLearningPlans']);
+        navigate('/profile/' + currentUser.id);
       }
     }
   );
@@ -110,7 +119,8 @@ export default function LearningPlanPage() {
 
   const handleEditStep = (step) => {
     setEditingStep(step);
-    setEditedStepContent(step.content);
+    // Fix: Set the edited content based on the step's content, description, or title
+    setEditedStepContent(step.content || step.description || step.title || '');
   };
 
   const handleSaveEdit = () => {
@@ -143,11 +153,40 @@ export default function LearningPlanPage() {
     deletePlanMutation.mutate();
   };
 
+  // Fix: When editing a learning plan, navigate to edit page with state containing the plan data
+  const handleEditPlan = () => {
+    navigate(`/learning-plans/edit/${planId}`, { 
+      state: { 
+        plan: {
+          title: plan.title,
+          description: plan.description,
+          skill: plan.skill,
+          steps: plan.steps
+        } 
+      }
+    });
+  };
+
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ my: 4, textAlign: 'center' }}>
+          <Typography variant="h5" color="error" gutterBottom>
+            Error loading learning plan
+          </Typography>
+          <Button variant="contained" onClick={() => navigate(-1)}>
+            Go Back
+          </Button>
+        </Box>
+      </Container>
     );
   }
 
@@ -159,7 +198,7 @@ export default function LearningPlanPage() {
           <Typography variant="h5" color="error" gutterBottom>
             Learning plan not found
           </Typography>
-          <Button variant="contained" onClick={() => navigate('/profile')}>
+          <Button variant="contained" onClick={() => navigate('/profile/' + (currentUser?.id || ''))}>
             Go to Profile
           </Button>
         </Box>
@@ -185,7 +224,7 @@ export default function LearningPlanPage() {
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
-                onClick={() => navigate(`/learning-plans/edit/${planId}`)}
+                onClick={handleEditPlan}
                 sx={{ mr: 1 }}
               >
                 Edit
@@ -207,15 +246,23 @@ export default function LearningPlanPage() {
         </Typography>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-          {plan.skills?.map(skill => (
-            <Paper
-              key={skill}
+          {plan.skills && plan.skills.length > 0 ? (
+            plan.skills.map(skill => (
+              <Chip
+                key={skill}
+                label={skill}
+                variant="outlined"
+                color="primary"
+              />
+            ))
+          ) : plan.skill ? (
+            <Chip
+              key={plan.skill}
+              label={plan.skill}
               variant="outlined"
-              sx={{ px: 1.5, py: 0.5, borderRadius: 4 }}
-            >
-              <Typography variant="body2">{skill}</Typography>
-            </Paper>
-          ))}
+              color="primary"
+            />
+          ) : null}
         </Box>
 
         <Box sx={{ mb: 3 }}>
@@ -224,7 +271,7 @@ export default function LearningPlanPage() {
             display: 'flex',
             alignItems: 'center'
           }}>
-            Created by {plan.userName} on {format(new Date(plan.createdAt), 'MMMM d, yyyy')}
+            Created by {plan.userName || 'User'} on {format(new Date(plan.createdAt), 'MMMM d, yyyy')}
           </Typography>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
@@ -335,7 +382,7 @@ export default function LearningPlanPage() {
                   </Box>
                 ) : (
                   <ListItemText
-                    primary={step.content}
+                    primary={step.content || step.description || step.title}
                     sx={{
                       textDecoration: step.completed ? 'line-through' : 'none',
                       color: step.completed ? 'text.secondary' : 'text.primary'

@@ -77,7 +77,11 @@ export default function PostCard({ post }) {
   );
 
   const updateMutation = useMutation(
-    (content) => postApi.updatePost(post.id, { content }),
+    (content) => postApi.updatePost(post.id, { 
+      content,
+      mediaUrls: post.mediaUrls, // Preserve the existing media URLs
+      skillCategory: post.skillCategory // Preserve the skill category
+    }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['userPosts']);
@@ -88,6 +92,7 @@ export default function PostCard({ post }) {
       }
     }
   );
+
 
   const handleMenuOpen = (event) => {
     setMenuAnchorEl(event.currentTarget);
@@ -246,27 +251,52 @@ export default function PostCard({ post }) {
       <CardContent sx={{ pt: 0 }}>
         {editMode ? (
           <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              variant="outlined"
-            />
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1 }}>
-              <Button onClick={() => setEditMode(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="contained" 
-                onClick={handleSaveEdit}
-                disabled={updateMutation.isLoading}
-              >
-                Save
-              </Button>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            variant="outlined"
+          />
+          
+          {/* Display existing media during edit mode but make it clear it can't be changed */}
+          {hasMedia && (
+            <Box sx={{ my: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                Media cannot be changed during edit
+              </Typography>
+              {post.mediaUrls.length === 1 ? (
+                renderMedia(post.mediaUrls[0])
+              ) : (
+                <ImageList 
+                  cols={post.mediaUrls.length > 3 ? 2 : post.mediaUrls.length} 
+                  gap={8}
+                  sx={{ mb: 0, width: '80%', maxWidth: '600px', margin: '0 auto' }}
+                >
+                  {post.mediaUrls.map((url, index) => (
+                    <ImageListItem key={index}>
+                      {renderMedia(url)}
+                    </ImageListItem>
+                  ))}
+                </ImageList>
+              )}
             </Box>
+          )}
+          
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1 }}>
+            <Button onClick={() => setEditMode(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={handleSaveEdit}
+              disabled={updateMutation.isLoading}
+            >
+              Save
+            </Button>
           </Box>
+        </Box>
         ) : (
           <Typography variant="body1" component="div" gutterBottom>
             {post.content}

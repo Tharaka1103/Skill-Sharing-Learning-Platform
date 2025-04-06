@@ -2,13 +2,15 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container, Grid, Box, Typography, Button, Avatar, Paper,
-  Tabs, Tab, Divider, CircularProgress, Chip, IconButton, Snackbar, Alert
+  Tabs, Tab, Divider, CircularProgress, Chip, IconButton, Snackbar, Alert, Fab
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Add as AddIcon,
   PersonAdd as FollowIcon,
-  Check as FollowingIcon
+  Check as FollowingIcon,
+  PostAdd as PostAddIcon,
+  PlaylistAdd as PlanAddIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { userApi, postApi, learningPlanApi } from '../services/api';
@@ -16,6 +18,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import PostCard from '../components/PostCard';
 import LearningPlanCard from '../components/LearningPlanCard';
 import FollowDialog from '../components/FollowDialog';
+import CreatePostDialog from '../components/CreatePostDialog';
 
 export default function ProfilePage() {
   const [tabValue, setTabValue] = useState(0);
@@ -23,6 +26,7 @@ export default function ProfilePage() {
   const [followDialogType, setFollowDialogType] = useState('followers');
   const [errorMessage, setErrorMessage] = useState('');
   const [showError, setShowError] = useState(false);
+  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   
   const { userId } = useParams();
   const { currentUser, isAuthenticated } = useContext(AuthContext);
@@ -123,6 +127,14 @@ export default function ProfilePage() {
     setShowError(false);
   };
 
+  const handleCreatePost = () => {
+    setCreatePostDialogOpen(true);
+  };
+
+  const handleCreateLearningPlan = () => {
+    navigate('/learning-plans/create');
+  };
+
   // Extract user data from response
   // Handle different response formats from different endpoints
   const user = userData?.data || userData;
@@ -130,14 +142,17 @@ export default function ProfilePage() {
   
   // Extract posts and learning plans
   const posts = postsData?.data?.content || postsData?.data || [];
-  const learningPlans = learningPlansData?.data || [];
+  const learningPlans = learningPlansData?.data?.content || learningPlansData?.content || [];
 
   // Log data for debugging
   useEffect(() => {
     if (userData) {
       console.log("User data:", userData);
     }
-  }, [userData]);
+    if (learningPlansData) {
+      console.log("Learning plans data:", learningPlansData);
+    }
+  }, [userData, learningPlansData]);
 
   if (userLoading) {
     return (
@@ -282,16 +297,47 @@ export default function ProfilePage() {
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-        >
-          <Tab label="Posts" />
-          <Tab label="Learning Plans" />
-        </Tabs>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            indicatorColor="primary"
+            textColor="primary"
+            sx={{ flexGrow: 1 }}
+          >
+            <Tab label="Posts" />
+            <Tab label="Learning Plans" />
+          </Tabs>
+          
+          {/* Add buttons for creating posts and learning plans */}
+          {isOwnProfile && (
+            <Box sx={{ pr: 2 }}>
+              {tabValue === 0 ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<PostAddIcon />}
+                  onClick={handleCreatePost}
+                  size="small"
+                  sx={{ my: 1 }}
+                >
+                  New Post
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<PlanAddIcon />}
+                  onClick={handleCreateLearningPlan}
+                  size="small"
+                  sx={{ my: 1 }}
+                >
+                  New Learning Plan
+                </Button>
+              )}
+            </Box>
+          )}
+        </Box>
       </Paper>
 
       {/* Tab Content */}
@@ -310,7 +356,7 @@ export default function ProfilePage() {
               <Button 
                 variant="contained" 
                 startIcon={<AddIcon />}
-                onClick={() => navigate('/create-post')}
+                onClick={handleCreatePost}
                 sx={{ mt: 2 }}
               >
                 Create your first post
@@ -341,7 +387,7 @@ export default function ProfilePage() {
               <Button 
                 variant="contained" 
                 startIcon={<AddIcon />}
-                onClick={() => navigate('/learning-plans/create')}
+                onClick={handleCreateLearningPlan}
                 sx={{ mt: 2 }}
               >
                 Create a learning plan
@@ -350,13 +396,40 @@ export default function ProfilePage() {
           </Paper>
         ) : (
           <Grid container spacing={3}>
-            {learningPlans.map((plan) => (
+            {Array.isArray(learningPlans) ? learningPlans.map((plan) => (
               <Grid item xs={12} md={6} key={plan.id}>
-                <LearningPlanCard plan={plan} />
+                <LearningPlanCard 
+                  learningPlan={plan} 
+                  isOwner={isOwnProfile}
+                />
               </Grid>
-            ))}
+            )) : (
+              <Grid item xs={12}>
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                  <Typography variant="body1" color="error">
+                    Error loading learning plans
+                  </Typography>
+                </Paper>
+              </Grid>
+            )}
           </Grid>
         )
+      )}
+
+      {/* Floating Action Button for quick creation */}
+      {isOwnProfile && (
+        <Fab
+          color="primary"
+          aria-label={tabValue === 0 ? "add post" : "add learning plan"}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+          }}
+          onClick={tabValue === 0 ? handleCreatePost : handleCreateLearningPlan}
+        >
+          <AddIcon />
+        </Fab>
       )}
 
       {/* Followers/Following Dialog */}
@@ -366,6 +439,12 @@ export default function ProfilePage() {
         userId={userId}
         type={followDialogType}
         username={user.username}
+      />
+
+      {/* Create Post Dialog */}
+      <CreatePostDialog
+        open={createPostDialogOpen}
+        onClose={() => setCreatePostDialogOpen(false)}
       />
 
       {/* Error Snackbar */}
@@ -382,3 +461,4 @@ export default function ProfilePage() {
     </Container>
   );
 }
+

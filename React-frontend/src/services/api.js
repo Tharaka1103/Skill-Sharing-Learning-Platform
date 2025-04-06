@@ -53,7 +53,7 @@ export const userApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  getUser: (userId) => api.get(`/users/me`),
+  getUser: () => api.get(`/users/me`),
   getUserById: (userId) => api.get(`/users/${userId}`),
   updateUser: (userData) => api.put('/users/profile', userData),
   followUser: (userId) => api.post(`/users/${userId}/follow`),
@@ -87,7 +87,15 @@ export const postApi = {
     });
   },
   getPost: (postId) => api.get(`/posts/${postId}`),
-  updatePost: (postId, postData) => api.put(`/posts/${postId}`, postData),
+  updatePost: (postId, postData) => {
+    // Ensure we're sending all necessary fields
+    const formattedData = {
+      content: postData.content,
+      skillCategory: postData.skillCategory || '',
+      mediaUrls: postData.mediaUrls || []
+    };
+    return api.put(`/posts/${postId}`, formattedData);
+  },  
   deletePost: (postId) => api.delete(`/posts/${postId}`),
   getFeed: () => api.get('/posts/feed'),
   getExploreFeed: () => api.get('/posts/explore'),
@@ -131,18 +139,69 @@ export const commentApi = {
 };
 
 // Learning Plan API service
+// Learning Plan API service
 export const learningPlanApi = {
-  createPlan: (planData) => api.post('/learning-plans', planData),
+  createPlan: (planData) => {
+    // Ensure skills is properly formatted
+    const formattedData = {
+      ...planData,
+      // If skills is a string, convert it to an array
+      skills: typeof planData.skills === 'string' 
+        ? [planData.skills] 
+        : planData.skills
+    };
+    return api.post('/learning-plans', formattedData);
+  },
+  updatePlan: (planId, planData) => {
+    // Ensure skills is properly formatted
+    const formattedData = {
+      ...planData,
+      // If skills is a string, convert it to an array
+      skills: typeof planData.skills === 'string' 
+        ? [planData.skills] 
+        : planData.skills
+    };
+    // Don't send steps in the update if they're not being edited
+    if (!formattedData.steps) {
+      delete formattedData.steps;
+    }
+    return api.put(`/learning-plans/${planId}`, formattedData);
+  },  
+  // Rest of the methods remain the same
   getPlan: (planId) => api.get(`/learning-plans/${planId}`),
-  updatePlan: (planId, planData) => api.put(`/learning-plans/${planId}`, planData),
   deletePlan: (planId) => api.delete(`/learning-plans/${planId}`),
-  getUserPlans: (userId) => api.get(`/users/${userId}/learning-plans`),
-  addPlanStep: (planId, stepData) => api.post(`/learning-plans/${planId}/steps`, stepData),
-  updatePlanStep: (planId, stepId, stepData) => api.put(`/learning-plans/${planId}/steps/${stepId}`, stepData),
+  getUserPlans: (userId) => api.get(`/learning-plans/user/${userId}`),
+  addPlanStep: (planId, stepData) => {
+    // Create a proper step object with content field
+    const step = {
+      title: stepData.content,
+      description: stepData.content,
+      completed: false
+    };
+    return api.post(`/learning-plans/${planId}/steps`, step);
+  },
+  updatePlanStep: (planId, stepId, stepData) => {
+    // Handle both content updates and completion status updates
+    const updatedStep = {};
+    
+    if (stepData.content !== undefined) {
+      updatedStep.title = stepData.content;
+      updatedStep.description = stepData.content;
+    }
+    
+    if (stepData.completed !== undefined) {
+      updatedStep.completed = stepData.completed;
+    }
+    
+    return api.put(`/learning-plans/${planId}/steps/${stepId}`, updatedStep);
+  },
   deletePlanStep: (planId, stepId) => api.delete(`/learning-plans/${planId}/steps/${stepId}`),
   reorderPlanStep: (planId, stepId, direction) => 
     api.put(`/learning-plans/${planId}/steps/${stepId}/reorder`, { direction }),
+  updateProgress: (planId, progress) => 
+    api.put(`/learning-plans/${planId}/progress`, { progress }),
 };
+
 
 // Skill API service
 export const skillApi = {

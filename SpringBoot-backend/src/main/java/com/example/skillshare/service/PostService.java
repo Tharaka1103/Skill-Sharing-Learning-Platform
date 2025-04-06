@@ -75,8 +75,17 @@ public class PostService {
         }
 
         post.setContent(postDto.getContent());
-        post.setSkillCategory(postDto.getSkillCategory());
-        post.setMediaUrls(postDto.getMediaUrls());
+
+        // Only update skill category if provided
+        if (postDto.getSkillCategory() != null) {
+            post.setSkillCategory(postDto.getSkillCategory());
+        }
+
+        // Only update media URLs if provided and not empty
+        if (postDto.getMediaUrls() != null && !postDto.getMediaUrls().isEmpty()) {
+            post.setMediaUrls(postDto.getMediaUrls());
+        }
+
         post.setUpdatedAt(new Date());
 
         return postRepository.save(post);

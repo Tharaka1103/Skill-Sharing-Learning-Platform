@@ -2,6 +2,7 @@ package com.example.skillshare.controller;
 
 import com.example.skillshare.dto.LearningPlanDto;
 import com.example.skillshare.model.LearningPlan;
+import com.example.skillshare.model.LearningStep;
 import com.example.skillshare.service.LearningPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/learning-plans")
@@ -77,22 +80,56 @@ public class LearningPlanController {
     public ResponseEntity<LearningPlan> updateLearningPlanProgress(
             @AuthenticationPrincipal UserDetails currentUser,
             @PathVariable String planId,
-            @RequestParam int progress) {
+            @RequestBody Map<String, Integer> payload) {
 
+        int progress = payload.getOrDefault("progress", 0);
         LearningPlan learningPlan = learningPlanService.updateLearningPlanProgress(currentUser.getUsername(), planId,
                 progress);
         return ResponseEntity.ok(learningPlan);
     }
 
+    @PostMapping("/{planId}/steps")
+    public ResponseEntity<LearningPlan> addLearningStep(
+            @AuthenticationPrincipal UserDetails currentUser,
+            @PathVariable String planId,
+            @RequestBody LearningStep step) {
+
+        LearningPlan learningPlan = learningPlanService.addLearningStep(currentUser.getUsername(), planId, step);
+        return ResponseEntity.ok(learningPlan);
+    }
+
     @PutMapping("/{planId}/steps/{stepId}")
-    public ResponseEntity<LearningPlan> updateLearningStepStatus(
+    public ResponseEntity<LearningPlan> updateLearningStep(
             @AuthenticationPrincipal UserDetails currentUser,
             @PathVariable String planId,
             @PathVariable String stepId,
-            @RequestParam boolean completed) {
+            @RequestBody LearningStep step) {
 
-        LearningPlan learningPlan = learningPlanService.updateLearningStepStatus(currentUser.getUsername(), planId,
-                stepId, completed);
+        LearningPlan learningPlan = learningPlanService.updateLearningStep(currentUser.getUsername(), planId, stepId,
+                step);
+        return ResponseEntity.ok(learningPlan);
+    }
+
+    @DeleteMapping("/{planId}/steps/{stepId}")
+    public ResponseEntity<LearningPlan> deleteLearningStep(
+            @AuthenticationPrincipal UserDetails currentUser,
+            @PathVariable String planId,
+            @PathVariable String stepId) {
+
+        LearningPlan learningPlan = learningPlanService.deleteLearningStep(currentUser.getUsername(), planId, stepId);
+        return ResponseEntity.ok(learningPlan);
+    }
+
+    @PutMapping("/{planId}/steps/{stepId}/reorder")
+    public ResponseEntity<LearningPlan> reorderLearningStep(
+            @AuthenticationPrincipal UserDetails currentUser,
+            @PathVariable String planId,
+            @PathVariable String stepId,
+            @RequestBody Map<String, String> payload) {
+
+        String direction = payload.getOrDefault("direction", "up");
+        LearningPlan learningPlan = learningPlanService.reorderLearningStep(currentUser.getUsername(), planId, stepId,
+                direction);
         return ResponseEntity.ok(learningPlan);
     }
 }
