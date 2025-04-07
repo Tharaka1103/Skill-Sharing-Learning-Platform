@@ -74,21 +74,6 @@ export default function Layout() {
         </Typography>
       </Box>
       <Divider />
-      <List>
-        {navItems.map((item) => (
-          (!item.auth || isAuthenticated) && (
-            <ListItem 
-              button 
-              key={item.name}
-              onClick={() => navigate(item.path)}
-              selected={isActive(item.path)}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.name} />
-            </ListItem>
-          )
-        ))}
-      </List>
       <Divider />
       <List>
         {isAuthenticated ? (
@@ -146,29 +131,6 @@ export default function Layout() {
             SkillShare
           </Typography>
           
-          {!isMobile && (
-            <Box sx={{ display: 'flex', mx: 2 }}>
-              {navItems.map((item) => (
-                (!item.auth || isAuthenticated) && (
-                  <Button
-                    key={item.name}
-                    color="inherit"
-                    startIcon={item.icon}
-                    onClick={() => navigate(item.path)}
-                    sx={{
-                      mx: 1,
-                      fontWeight: isActive(item.path) ? 'bold' : 'normal',
-                      borderBottom: isActive(item.path) ? '2px solid white' : 'none',
-                      borderRadius: 0,
-                      paddingBottom: '3px'
-                    }}
-                  >
-                    {item.name}
-                  </Button>
-                )
-              ))}
-            </Box>
-          )}
 
           {isAuthenticated ? (
             <>
