@@ -17,8 +17,9 @@ import {
   Login as LoginIcon,
   PersonAdd as RegisterIcon
 } from '@mui/icons-material';
+import { useQuery } from 'react-query';
 import { AuthContext } from '../contexts/AuthContext';
-
+import { getFullImageUrl } from '../utils/imageUtils';
 export default function Layout() {
   const { currentUser, isAuthenticated, logout } = useContext(AuthContext);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,6 +47,14 @@ export default function Layout() {
     navigate('/login');
   };
   
+  const { data: unreadCount } = useQuery(
+    ['unreadNotifications'], 
+    () => notificationApi.getUnreadCount(),
+    { 
+      enabled: isAuthenticated,
+      refetchInterval: 30000, // Refresh every 30 seconds
+    }
+  );
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -175,7 +184,7 @@ export default function Layout() {
               
               <Tooltip title="Notifications">
                 <IconButton color="inherit" sx={{ mr: 1 }}>
-                  <Badge badgeContent={3} color="error">
+                  <Badge badgeContent={unreadCount?.data || 0} color="error">
                     <NotificationsIcon />
                   </Badge>
                 </IconButton>
@@ -189,8 +198,7 @@ export default function Layout() {
                 >
                   <Avatar 
                     alt={currentUser?.name}
-                    src={currentUser?.profilePicture}
-                    sx={{ width: 32, height: 32 }}
+                    src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}                    sx={{ width: 32, height: 32 }}
                   />
                 </IconButton>
               </Tooltip>

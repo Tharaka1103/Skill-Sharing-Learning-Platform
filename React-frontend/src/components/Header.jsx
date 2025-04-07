@@ -12,7 +12,7 @@ import {
 import { AuthContext } from '../contexts/AuthContext';
 import { notificationApi } from '../services/api';
 import { useQuery } from 'react-query';
-
+import { getFullImageUrl } from '../utils/imageUtils';
 export default function Header() {
   const { isAuthenticated, currentUser, logout } = useContext(AuthContext);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -150,8 +150,7 @@ return (
               sx={{ ml: 1 }}
             >
               <Avatar 
-                src={currentUser?.profilePicture} 
-                alt={currentUser?.name}
+                src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}                alt={currentUser?.name}
                 sx={{ width: 32, height: 32 }}
               />
             </IconButton>

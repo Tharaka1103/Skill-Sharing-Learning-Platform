@@ -53,6 +53,8 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
+    // Only the profile picture and cover photo methods need updates:
+
     @PostMapping("/profile/picture")
     public ResponseEntity<?> updateProfilePicture(
             @AuthenticationPrincipal UserDetails currentUser,
@@ -61,7 +63,11 @@ public class UserController {
         String email = currentUser.getUsername();
         String imageUrl = fileStorageService.storeFile(file);
         User updatedUser = userService.updateProfilePicture(email, imageUrl);
-        return ResponseEntity.ok(updatedUser);
+
+        // Return the full user object with updated profile picture
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", updatedUser);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/profile/cover")
@@ -72,10 +78,15 @@ public class UserController {
         String email = currentUser.getUsername();
         String imageUrl = fileStorageService.storeFile(file);
         User updatedUser = userService.updateCoverPicture(email, imageUrl);
-        return ResponseEntity.ok(updatedUser);
+
+        // Return the full user object with updated cover photo
+        Map<String, Object> response = new HashMap<>();
+        response.put("data", updatedUser);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{userId}/follow")
+
     public ResponseEntity<?> followUser(
             @AuthenticationPrincipal UserDetails currentUser,
             @PathVariable String userId) {

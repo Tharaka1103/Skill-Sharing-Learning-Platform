@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { useMutation, useQueryClient } from 'react-query';
 import { AuthContext } from '../contexts/AuthContext';
 import { postApi } from '../services/api';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 export default function PostCard({ post }) {
   const { currentUser } = useContext(AuthContext);
@@ -115,11 +116,6 @@ export default function PostCard({ post }) {
   };
   
   const API_BASE_URL = 'http://localhost:4000';
-  const getFullImageUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
   
   const handleDeleteClick = () => {
     setConfirmDelete(true);
@@ -203,7 +199,7 @@ export default function PostCard({ post }) {
       <CardHeader
         avatar={
           <Avatar 
-            src={post.userProfilePicture} 
+            src={getFullImageUrl(post.userProfilePicture)} 
             alt={post.userName || "User"}
             onClick={handleProfileClick}
             sx={{ 

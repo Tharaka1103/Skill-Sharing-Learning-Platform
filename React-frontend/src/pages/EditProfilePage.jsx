@@ -14,6 +14,7 @@ import * as Yup from 'yup';
 import { useMutation } from 'react-query';
 import { userApi, skillApi } from '../services/api';
 import { AuthContext } from '../contexts/AuthContext';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 const validationSchema = Yup.object({
   name: Yup.string()
@@ -41,6 +42,41 @@ export default function EditProfilePage() {
   const [error, setError] = useState('');
   const { currentUser, updateUserData } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Add mutations for image uploads separately from profile update
+  const updateProfilePictureMutation = useMutation(
+    (file) => userApi.updateProfilePicture(file),
+    {
+      onSuccess: (response) => {
+        const updatedUser = response.data.data || response.data;
+        // Update the current user with new profile picture
+        updateUserData({
+          ...currentUser,
+          profilePicture: updatedUser.profilePicture
+        });
+      },
+      onError: (error) => {
+        setError(error.response?.data?.message || 'Failed to update profile picture. Please try again.');
+      }
+    }
+  );
+
+  const updateCoverPictureMutation = useMutation(
+    (file) => userApi.updateCoverPicture(file),
+    {
+      onSuccess: (response) => {
+        const updatedUser = response.data.data || response.data;
+        // Update the current user with new cover picture
+        updateUserData({
+          ...currentUser,
+          coverPicture: updatedUser.coverPicture
+        });
+      },
+      onError: (error) => {
+        setError(error.response?.data?.message || 'Failed to update cover photo. Please try again.');
+      }
+    }
+  );
 
   const updateProfileMutation = useMutation(
     (formData) => userApi.updateUser(formData),
@@ -82,6 +118,14 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
+    } else {
+      // Set initial previews based on current user data
+      if (currentUser.profilePicture) {
+        setProfilePicturePreview(getFullImageUrl(currentUser.profilePicture));
+      }
+      if (currentUser.coverPicture) {
+        setCoverPhotoPreview(getFullImageUrl(currentUser.coverPicture));
+      }
     }
   }, [currentUser, navigate]);
 
@@ -94,24 +138,25 @@ export default function EditProfilePage() {
       skills: currentUser?.skills || [],
     },
     validationSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       setError('');
       
-      const formData = new FormData();
-      formData.append('name', values.name);
-      formData.append('username', values.username);
-      formData.append('bio', values.bio);
-      formData.append('email', values.email);
-      
-      if (profilePictureFile) {
-        formData.append('profilePicture', profilePictureFile);
+      try {
+        // First upload images if they exist
+        if (profilePictureFile) {
+          await updateProfilePictureMutation.mutateAsync(profilePictureFile);
+        }
+        
+        if (coverPhotoFile) {
+          await updateCoverPictureMutation.mutateAsync(coverPhotoFile);
+        }
+        
+        // Then update profile data
+        updateProfileMutation.mutate(values);
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        setError("An error occurred while updating your profile. Please try again.");
       }
-      
-      if (coverPhotoFile) {
-        formData.append('coverPhoto', coverPhotoFile);
-      }
-      
-      updateProfileMutation.mutate(formData);
     },
   });
 
@@ -176,7 +221,7 @@ export default function EditProfilePage() {
               
               <Box sx={{ position: 'relative', mb: 3 }}>
                 <Avatar
-                  src={profilePicturePreview || currentUser.profilePicture}
+                  src={profilePicturePreview || getFullImageUrl(currentUser.profilePicture)}
                   alt={currentUser.name}
                   sx={{ width: 150, height: 150 }}
                 />
@@ -216,7 +261,8 @@ export default function EditProfilePage() {
                   borderRadius: 1,
                   overflow: 'hidden',
                   position: 'relative',
-                  backgroundImage: coverPhotoPreview || currentUser.coverPhoto ? `url(${coverPhotoPreview || currentUser.coverPhoto})` : 'none',
+                  backgroundImage: coverPhotoPreview || getFullImageUrl(currentUser.coverPicture) ? 
+                                  `url(${coverPhotoPreview || getFullImageUrl(currentUser.coverPicture)})` : 'none',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
@@ -358,20 +404,32 @@ export default function EditProfilePage() {
             <Button
               variant="outlined"
               onClick={() => navigate(`/profile/${currentUser.id}`)}
-              disabled={updateProfileMutation.isLoading}
+              disabled={updateProfileMutation.isLoading || 
+                      updateProfilePictureMutation.isLoading || 
+                      updateCoverPictureMutation.isLoading}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              disabled={updateProfileMutation.isLoading || !formik.isValid}
-            >
-              {updateProfileMutation.isLoading ? <CircularProgress size={24} /> : "Save Changes"}
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
-    </Container>
-  );
+              disabled={updateProfileMutation.isLoading || 
+                updateProfilePictureMutation.isLoading || 
+                updateCoverPictureMutation.isLoading ||
+                !formik.isValid}
+      >
+        {(updateProfileMutation.isLoading || 
+          updateProfilePictureMutation.isLoading || 
+          updateCoverPictureMutation.isLoading) ? (
+          <CircularProgress size={24} />
+        ) : (
+          "Save Changes"
+        )}
+      </Button>
+    </Box>
+  </Box>
+</Paper>
+</Container>
+);
 }
+

@@ -43,14 +43,18 @@ export const userApi = {
     const formData = new FormData();
     formData.append('profilePicture', file);
     return api.post('/users/profile/picture', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+      }
     });
   },
   updateCoverPicture: (file) => {
     const formData = new FormData();
     formData.append('coverPhoto', file);
     return api.post('/users/profile/cover', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+      }
     });
   },
   getUser: () => api.get(`/users/me`),

@@ -19,6 +19,7 @@ import PostCard from '../components/PostCard';
 import LearningPlanCard from '../components/LearningPlanCard';
 import FollowDialog from '../components/FollowDialog';
 import CreatePostDialog from '../components/CreatePostDialog';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 export default function ProfilePage() {
   const [tabValue, setTabValue] = useState(0);
@@ -188,7 +189,7 @@ export default function ProfilePage() {
             height: 200,
             bgcolor: 'primary.light',
             position: 'relative',
-            backgroundImage: user.coverPhoto ? `url(${user.coverPhoto})` : 'none',
+            backgroundImage: user.coverPicture ? `url(${getFullImageUrl(user.coverPicture)})` : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -197,7 +198,7 @@ export default function ProfilePage() {
         <Box sx={{ p: 3, position: 'relative' }}>
           {/* Profile Picture */}
           <Avatar
-            src={user.profilePicture}
+            src={getFullImageUrl(user.profilePicture)}
             alt={user.name}
             sx={{
               width: 120,

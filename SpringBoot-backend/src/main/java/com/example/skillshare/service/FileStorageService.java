@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +21,11 @@ public class FileStorageService {
 
     public String storeFile(MultipartFile file) {
         try {
+            // Validate file
+            if (file.isEmpty()) {
+                throw new RuntimeException("Failed to store empty file");
+            }
+
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
 
             if (!Files.exists(uploadPath)) {
@@ -36,7 +42,10 @@ public class FileStorageService {
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
 
             Path targetLocation = uploadPath.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             return "/uploads/" + uniqueFileName;
         } catch (IOException ex) {

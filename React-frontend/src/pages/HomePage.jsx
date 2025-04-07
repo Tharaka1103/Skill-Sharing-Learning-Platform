@@ -12,7 +12,7 @@ import PostCard from '../components/PostCard';
 import SuggestedUserCard from '../components/SuggestedUserCard';
 import TrendingSkillsCard from '../components/TrendingSkillsCard';
 import CreatePostDialog from '../components/CreatePostDialog';
-
+import { getFullImageUrl } from '../utils/imageUtils';
 export default function HomePage() {
   const [tabValue, setTabValue] = useState(0);
   const [createPostOpen, setCreatePostOpen] = useState(false);
@@ -116,17 +116,17 @@ export default function HomePage() {
             {currentUser && (
               <Paper sx={{ p: 3, mb: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Box 
-                    component="img"
-                    src={currentUser.profilePicture || '/default-avatar.png'}
-                    alt={currentUser.name}
-                    sx={{ 
-                      width: 60, 
-                      height: 60, 
-                      borderRadius: '50%',
-                      mr: 2
-                    }}
-                  />
+                <Box 
+                  component="img"
+                  src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}
+                  alt={currentUser.name}
+                  sx={{ 
+                    width: 60, 
+                    height: 60, 
+                    borderRadius: '50%',
+                    mr: 2
+                  }}
+                />
                   <Box>
                     <Typography variant="h6">
                       {currentUser.name}
