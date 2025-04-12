@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { useState, useEffect, useContext } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, List, ListItem,
   ListItemAvatar, ListItemText, Avatar, Typography,
@@ -14,11 +15,14 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { userApi } from '../services/api';
+import { getFullImageUrl } from '../utils/imageUtils';
+import { AuthContext } from '../contexts/AuthContext';
 
 export default function FollowDialog({ open, onClose, userId, type, username }) {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { currentUser, isAuthenticated } = useContext(AuthContext);
 
   useEffect(() => {
     // Reset search when dialog opens
@@ -73,13 +77,14 @@ export default function FollowDialog({ open, onClose, userId, type, username }) 
     onClose();
   };
 
-  const users = data?.data || [];
+  const users = data?.data?.data || data?.data || [];
   const filteredUsers = searchTerm.trim() 
-    ? users.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : users;
+  ? users.filter(user => 
+      (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+  : users;
+
 
   return (
     <Dialog
@@ -142,7 +147,7 @@ export default function FollowDialog({ open, onClose, userId, type, username }) 
               <React.Fragment key={user.id}>
                 <ListItem
                   secondaryAction={
-                    userId !== user.id && (
+                    isAuthenticated && currentUser && userId !== user.id && user.id !== currentUser.id && (
                       <Button
                         variant={user.isFollowing ? "outlined" : "contained"}
                         size="small"
@@ -157,7 +162,7 @@ export default function FollowDialog({ open, onClose, userId, type, username }) 
                 >
                   <ListItemAvatar>
                     <Avatar 
-                      src={user.profilePicture} 
+                      src={getFullImageUrl(user.profilePicture) || '/default-avatar.png'}
                       alt={user.name}
                       sx={{ cursor: 'pointer' }}
                       onClick={() => handleUserClick(user.id)}

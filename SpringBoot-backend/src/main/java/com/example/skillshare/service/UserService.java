@@ -56,6 +56,11 @@ public class UserService {
                 User follower = userRepository.findByEmail(followerEmail)
                                 .orElseThrow(() -> new RuntimeException("Follower user not found"));
 
+                // Prevent users from following themselves
+                if (follower.getId().equals(followedUserId)) {
+                        throw new IllegalArgumentException("Users cannot follow themselves");
+                }
+
                 User followed = userRepository.findById(followedUserId)
                                 .orElseThrow(() -> new RuntimeException("User to follow not found"));
 

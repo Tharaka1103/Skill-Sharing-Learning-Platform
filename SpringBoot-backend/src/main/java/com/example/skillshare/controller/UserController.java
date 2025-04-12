@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +35,45 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getUserProfile(@PathVariable String userId) {
+    public ResponseEntity<?> getUserProfile(
+            @PathVariable String userId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Map<String, Object> response = new HashMap<>();
-        response.put("data", user);
+        Map<String, Object> userData = new HashMap<>();
+
+        // Manually populate userData with fields from user
+        userData.put("id", user.getId());
+        userData.put("name", user.getName());
+        userData.put("email", user.getEmail());
+        userData.put("username", user.getUsername());
+        userData.put("bio", user.getBio());
+        userData.put("location", user.getLocation());
+        userData.put("profilePicture", user.getProfilePicture());
+        userData.put("coverPicture", user.getCoverPicture());
+        userData.put("skills", user.getSkills());
+        userData.put("interests", user.getInterests());
+        userData.put("followerCount", user.getFollowers().size());
+        userData.put("followingCount", user.getFollowing().size());
+        userData.put("createdAt", user.getCreatedAt());
+        userData.put("updatedAt", user.getUpdatedAt());
+
+        // Add isFollowing flag if authenticated
+        if (currentUser != null) {
+            String currentEmail = currentUser.getUsername();
+            User currentUserEntity = userRepository.findByEmail(currentEmail)
+                    .orElse(null);
+
+            if (currentUserEntity != null) {
+                boolean isFollowing = currentUserEntity.getFollowing().contains(userId);
+                userData.put("isFollowing", isFollowing);
+            }
+        }
+
+        response.put("data", userData);
         return ResponseEntity.ok(response);
     }
 
@@ -86,14 +120,38 @@ public class UserController {
     }
 
     @PostMapping("/{userId}/follow")
-
     public ResponseEntity<?> followUser(
             @AuthenticationPrincipal UserDetails currentUser,
             @PathVariable String userId) {
 
         String email = currentUser.getUsername();
+        User currentUserEntity = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Current user not found"));
+
+        // Prevent users from following themselves
+        if (currentUserEntity.getId().equals(userId)) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Users cannot follow themselves");
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+
         userService.followUser(email, userId);
-        return ResponseEntity.ok().build();
+
+        // Get the updated user data with isFollowing flag
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("id", user.getId());
+        userData.put("name", user.getName());
+        userData.put("username", user.getUsername() != null ? user.getUsername() : "");
+        userData.put("followerCount", user.getFollowers().size());
+        userData.put("followingCount", user.getFollowing().size());
+        userData.put("isFollowing", true);
+
+        response.put("data", userData);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{userId}/follow")
@@ -103,22 +161,97 @@ public class UserController {
 
         String email = currentUser.getUsername();
         userService.unfollowUser(email, userId);
-        return ResponseEntity.ok().build();
+
+        // Get the updated user data with isFollowing flag
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("id", user.getId());
+        userData.put("name", user.getName());
+        userData.put("username", user.getUsername() != null ? user.getUsername() : "");
+        userData.put("followerCount", user.getFollowers().size());
+        userData.put("followingCount", user.getFollowing().size());
+        userData.put("isFollowing", false);
+
+        response.put("data", userData);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{userId}/followers")
-    public ResponseEntity<?> getUserFollowers(@PathVariable String userId) {
+    public ResponseEntity<?> getUserFollowers(
+            @PathVariable String userId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
         List<User> followers = userService.getUserFollowers(userId);
+        List<Map<String, Object>> followerList = new ArrayList<>();
+
+        // Get the current user's following list to check if the current user follows
+        // each follower
+        String currentEmail = currentUser != null ? currentUser.getUsername() : null;
+        List<String> currentUserFollowing = new ArrayList<>();
+
+        if (currentEmail != null) {
+            User currentUserEntity = userRepository.findByEmail(currentEmail)
+                    .orElse(null);
+            if (currentUserEntity != null) {
+                currentUserFollowing = currentUserEntity.getFollowing();
+            }
+        }
+
+        // Convert each follower to a map with required fields
+        for (User follower : followers) {
+            Map<String, Object> followerMap = new HashMap<>();
+            followerMap.put("id", follower.getId());
+            followerMap.put("name", follower.getName());
+            followerMap.put("username", follower.getUsername() != null ? follower.getUsername() : "");
+            followerMap.put("profilePicture", follower.getProfilePicture());
+            followerMap.put("isFollowing", currentUserFollowing.contains(follower.getId()));
+
+            followerList.add(followerMap);
+        }
+
         Map<String, Object> response = new HashMap<>();
-        response.put("data", followers);
+        response.put("data", followerList);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{userId}/following")
-    public ResponseEntity<?> getUserFollowing(@PathVariable String userId) {
+    public ResponseEntity<?> getUserFollowing(
+            @PathVariable String userId,
+            @AuthenticationPrincipal UserDetails currentUser) {
+
         List<User> following = userService.getUserFollowing(userId);
+        List<Map<String, Object>> followingList = new ArrayList<>();
+
+        // Get the current user's following list to check if the current user follows
+        // each followed user
+        String currentEmail = currentUser != null ? currentUser.getUsername() : null;
+        List<String> currentUserFollowing = new ArrayList<>();
+
+        if (currentEmail != null) {
+            User currentUserEntity = userRepository.findByEmail(currentEmail)
+                    .orElse(null);
+            if (currentUserEntity != null) {
+                currentUserFollowing = currentUserEntity.getFollowing();
+            }
+        }
+
+        // Convert each following to a map with required fields
+        for (User followed : following) {
+            Map<String, Object> followedMap = new HashMap<>();
+            followedMap.put("id", followed.getId());
+            followedMap.put("name", followed.getName());
+            followedMap.put("username", followed.getUsername() != null ? followed.getUsername() : "");
+            followedMap.put("profilePicture", followed.getProfilePicture());
+            followedMap.put("isFollowing", currentUserFollowing.contains(followed.getId()));
+
+            followingList.add(followedMap);
+        }
+
         Map<String, Object> response = new HashMap<>();
-        response.put("data", following);
+        response.put("data", followingList);
         return ResponseEntity.ok(response);
     }
 

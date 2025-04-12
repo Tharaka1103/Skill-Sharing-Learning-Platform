@@ -32,6 +32,7 @@ export const authApi = {
   getCurrentUser: () => api.get(`/auth/me`),
 };
 
+
 // User API service
 export const userApi = {
   updateUser: (userData) => {
@@ -63,9 +64,12 @@ export const userApi = {
   followUser: (userId) => api.post(`/users/${userId}/follow`),
   unfollowUser: (userId) => api.delete(`/users/${userId}/follow`),
   getSuggestedUsers: () => api.get('/users/suggested'),
-  getFollowers: (userId) => api.get(`/users/${userId}/followers`),
-  getFollowing: (userId) => api.get(`/users/${userId}/following`),
+// Fix these methods in the userApi object
+getUserFollowers: (userId) => api.get(`/users/${userId}/followers`),
+getUserFollowing: (userId) => api.get(`/users/${userId}/following`),
+
 };
+
 
 // Post API service
 export const postApi = {
@@ -129,6 +133,7 @@ export const postApi = {
   searchPosts: (query) => api.get('/posts/search', { params: { q: query } }),
 };
 
+
 // Comment API service
 export const commentApi = {
   getComment: (commentId) => api.get(`/comments/${commentId}`),
@@ -142,7 +147,7 @@ export const commentApi = {
   }
 };
 
-// Learning Plan API service
+
 // Learning Plan API service
 export const learningPlanApi = {
   createPlan: (planData) => {
@@ -207,11 +212,60 @@ export const learningPlanApi = {
 };
 
 
-// Skill API service
 export const skillApi = {
   getTrendingSkills: () => api.get('/skills/trending'),
   searchSkills: (query) => api.get('/skills/search', { params: { q: query } }),
   getUserSkills: (userId) => api.get(`/users/${userId}/skills`),
   addUserSkill: (skillName) => api.post('/users/me/skills', { name: skillName }),
   removeUserSkill: (skillName) => api.delete(`/users/me/skills/${encodeURIComponent(skillName)}`),
+};
+
+
+export const learningProgressApi = {
+  createProgress: (progressData) => {
+    // Ensure skills is properly formatted
+    const formattedData = {
+      ...progressData,
+      // If skills is a string, convert it to an array
+      skills: typeof progressData.skills === 'string' 
+        ? [progressData.skills] 
+        : progressData.skills
+    };
+    return api.post('/learning-progress', formattedData);
+  },
+  
+  updateProgress: (progressId, progressData) => {
+    // Ensure skills is properly formatted
+    const formattedData = {
+      ...progressData,
+      // If skills is a string, convert it to an array
+      skills: typeof progressData.skills === 'string' 
+        ? [progressData.skills] 
+        : progressData.skills
+    };
+    return api.put(`/learning-progress/${progressId}`, formattedData);
+  },
+  
+  getProgress: (progressId) => api.get(`/learning-progress/${progressId}`),
+  
+  deleteProgress: (progressId) => api.delete(`/learning-progress/${progressId}`),
+  
+  getUserProgress: (userId) => api.get(`/learning-progress/user/${userId}`),
+  
+  getProgressBySkill: (skill) => api.get(`/learning-progress/skill/${skill}`),
+};
+
+
+export const notificationApi = {
+  getNotifications: (page = 0, size = 10) => 
+    api.get(`/notifications?page=${page}&size=${size}`),
+  
+  getUnreadCount: () => 
+    api.get('/notifications/count'),
+  
+  markAsRead: (notificationId) => 
+    api.put(`/notifications/${notificationId}/read`),
+  
+  markAllAsRead: () => 
+    api.put('/notifications/mark-all-read')
 };

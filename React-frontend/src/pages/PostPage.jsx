@@ -16,6 +16,7 @@ import { postApi, commentApi } from '../services/api';
 import { AuthContext } from '../contexts/AuthContext';
 import PostCard from '../components/PostCard';
 import NotFoundPage from './NotFoundPage';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 export default function PostPage() {
   const [commentText, setCommentText] = useState('');
@@ -224,7 +225,7 @@ export default function PostPage() {
             )}
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Avatar 
-                src={currentUser?.profilePicture} 
+                src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}
                 alt={currentUser?.name} 
                 sx={{ width: 40, height: 40 }}
               />
@@ -307,8 +308,7 @@ export default function PostPage() {
                 >
                   <ListItemAvatar>
                     <Avatar 
-                      src={comment.userProfilePicture} 
-                      alt={comment.userName} 
+                      src={getFullImageUrl(comment.userProfilePicture) || '/default-avatar.png'}                      alt={comment.userName} 
                       onClick={() => navigate(`/profile/${comment.userId}`)}
                       sx={{ cursor: 'pointer' }}
                     />

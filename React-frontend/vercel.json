@@ -1,7 +1,0 @@
-{
-    "framework": "vite",
-    "buildCommand": "npm install && npx vite build",
-    "devCommand": "npm run dev",
-    "outputDirectory": "dist"
-  }
-  

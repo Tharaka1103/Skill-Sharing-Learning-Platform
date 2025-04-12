@@ -1,9 +1,10 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar, Toolbar, Typography, Box, Container, Button, Avatar,
   IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText,
-  Divider, useMediaQuery, useTheme, Badge, Menu, MenuItem, Tooltip
+  Divider, useMediaQuery, useTheme, Badge, Menu, MenuItem, Tooltip,
+  Popover, Paper, ListItemAvatar, Typography as MuiTypography
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -15,19 +16,27 @@ import {
   Create as CreateIcon,
   Logout as LogoutIcon,
   Login as LoginIcon,
-  PersonAdd as RegisterIcon
+  PersonAdd as RegisterIcon,
+  Comment as CommentIcon,
+  Favorite as LikeIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { AuthContext } from '../contexts/AuthContext';
 import { getFullImageUrl } from '../utils/imageUtils';
+import { notificationApi } from '../services/api';
+import { format } from 'date-fns';
+
 export default function Layout() {
   const { currentUser, isAuthenticated, logout } = useContext(AuthContext);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const [notificationsAnchor, setNotificationsAnchor] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
@@ -39,6 +48,16 @@ export default function Layout() {
 
   const handleProfileMenuClose = () => {
     setProfileMenuAnchor(null);
+  };
+
+  const handleNotificationsOpen = (event) => {
+    setNotificationsAnchor(event.currentTarget);
+    // Refetch notifications when opened
+    queryClient.invalidateQueries(['notifications']);
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchor(null);
   };
 
   const handleLogout = async () => {
@@ -55,6 +74,53 @@ export default function Layout() {
       refetchInterval: 30000, // Refresh every 30 seconds
     }
   );
+
+  const { data: notifications } = useQuery(
+    ['notifications'],
+    () => notificationApi.getNotifications(),
+    {
+      enabled: isAuthenticated && Boolean(notificationsAnchor),
+      onSuccess: () => {
+        // Invalidate unread count after getting notifications
+        queryClient.invalidateQueries(['unreadNotifications']);
+      }
+    }
+  );
+
+  const handleNotificationClick = async (notification) => {
+    // Mark notification as read
+    await notificationApi.markAsRead(notification.id);
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries(['unreadNotifications']);
+    
+    // Close notifications menu
+    handleNotificationsClose();
+    
+    // Navigate based on notification type
+    switch(notification.type) {
+      case 'COMMENT':
+      case 'LIKE':
+        navigate(`/posts/${notification.entityId}`);
+        break;
+      case 'FOLLOW':
+        navigate(`/profile/${notification.senderId}`);
+        break;
+      case 'LEARNING_UPDATE':
+        // Assuming this redirects to the learning progress
+        navigate(`/learning-progress/${notification.entityId}`);
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await notificationApi.markAllAsRead();
+    queryClient.invalidateQueries(['notifications']);
+    queryClient.invalidateQueries(['unreadNotifications']);
+  };
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -102,6 +168,20 @@ export default function Layout() {
       </List>
     </Box>
   );
+  
+  // Function to render notification icon based on type
+  const getNotificationIcon = (type) => {
+    switch(type) {
+      case 'COMMENT':
+        return <CommentIcon color="primary" />;
+      case 'LIKE':
+        return <LikeIcon color="error" />;
+      case 'FOLLOW':
+        return <PersonIcon color="success" />;
+      default:
+        return <NotificationsIcon />;
+    }
+  };
 
   return (
     <>
@@ -145,12 +225,68 @@ export default function Layout() {
               </Tooltip>
               
               <Tooltip title="Notifications">
-                <IconButton color="inherit" sx={{ mr: 1 }}>
+                <IconButton 
+                  color="inherit" 
+                  sx={{ mr: 1 }}
+                  onClick={handleNotificationsOpen}
+                >
                   <Badge badgeContent={unreadCount?.data || 0} color="error">
                     <NotificationsIcon />
                   </Badge>
                 </IconButton>
               </Tooltip>
+              
+              <Popover
+                open={Boolean(notificationsAnchor)}
+                anchorEl={notificationsAnchor}
+                onClose={handleNotificationsClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                <Paper sx={{ width: 320, maxHeight: 400, overflow: 'auto' }}>
+                  <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6">Notifications</Typography>
+                    <Button size="small" onClick={handleMarkAllAsRead}>
+                      Mark All as Read
+                    </Button>
+                  </Box>
+                  <Divider />
+                  <List sx={{ py: 0 }}>
+                    {notifications?.data?.content?.length > 0 ? (
+                      notifications.data.content.map((notification) => (
+                        <ListItem 
+                          key={notification.id}
+                          button 
+                          onClick={() => handleNotificationClick(notification)}
+                          sx={{
+                            bgcolor: notification.read ? 'transparent' : 'action.hover',
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar>
+                              {getNotificationIcon(notification.type)}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText 
+                            primary={notification.content}
+                            secondary={format(new Date(notification.createdAt), 'MMM d, yyyy • h:mm a')}
+                          />
+                        </ListItem>
+                      ))
+                    ) : (
+                      <ListItem>
+                        <ListItemText primary="No notifications" />
+                      </ListItem>
+                    )}
+                  </List>
+                </Paper>
+              </Popover>
               
               <Tooltip title="Profile">
                 <IconButton
@@ -160,7 +296,8 @@ export default function Layout() {
                 >
                   <Avatar 
                     alt={currentUser?.name}
-                    src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}                    sx={{ width: 32, height: 32 }}
+                    src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}                    
+                    sx={{ width: 32, height: 32 }}
                   />
                 </IconButton>
               </Tooltip>

@@ -14,6 +14,7 @@ import {
 import { format } from 'date-fns';
 import { useMutation, useQueryClient } from 'react-query';
 import { learningPlanApi } from '../services/api';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 export default function LearningPlanCard({ learningPlan, isOwner = false }) {
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -82,11 +83,7 @@ export default function LearningPlanCard({ learningPlan, isOwner = false }) {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Avatar 
-            src={learningPlan.userProfilePicture}
-            alt={learningPlan.userName}
-            sx={{ width: 24, height: 24, mr: 1 }}
-          />
+
           <Typography 
             variant="body2" 
             color="text.secondary"
