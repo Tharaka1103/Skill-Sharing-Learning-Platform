@@ -72,7 +72,7 @@ export default function HomePage() {
               textColor="primary"
               variant="fullWidth"
             >
-              <Tab label="Following" />
+              <Tab label="Feed" />
               <Tab label="Discover" />
             </Tabs>
           </Paper>

@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { AuthContext } from '../contexts/AuthContext';
 import { commentApi, postApi } from '../services/api';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-
+import { getFullImageUrl } from '../utils/imageUtils';
 export default function CommentSection({ postId }) {
   const { currentUser } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -25,7 +25,6 @@ export default function CommentSection({ postId }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const queryClient = useQueryClient();
-
   const { data, isLoading, isError } = useQuery(
     ['comments', postId],
     () => postApi.getComments(postId),
@@ -167,7 +166,6 @@ export default function CommentSection({ postId }) {
       </Box>
     );
   }
-
   if (isError) {
     return (
       <Box sx={{ p: 2 }}>
@@ -184,11 +182,11 @@ export default function CommentSection({ postId }) {
       <Typography variant="h6" gutterBottom>
         Comments
       </Typography>
-      
+      {currentUser && (
       <Box component="form" onSubmit={handleSubmitComment} sx={{ mb: 3, display: 'flex' }}>
         <Avatar 
-          src={currentUser?.profilePicture} 
-          alt={currentUser?.name}
+        src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}
+        alt={currentUser?.name}
           sx={{ mr: 1.5, width: 36, height: 36 }}
         />
         <TextField
@@ -207,7 +205,7 @@ export default function CommentSection({ postId }) {
           {addCommentMutation.isLoading ? 'Posting...' : 'Post'}
         </Button>
       </Box>
-
+)}
       {comments.length > 0 ? (
         <List>
           {comments.map((comment) => (
@@ -229,7 +227,7 @@ export default function CommentSection({ postId }) {
             >
               <ListItemAvatar>
                 <Avatar 
-                  src={comment.userProfilePicture} 
+                  src={getFullImageUrl(currentUser.profilePicture) || '/default-avatar.png'}
                   alt={comment.userName || 'User'}
                   onClick={() => handleUserProfileClick(comment.userId)}
                   sx={{ cursor: 'pointer' }}
