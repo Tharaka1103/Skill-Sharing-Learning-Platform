@@ -38,7 +38,6 @@ export default function CommentSection({ postId }) {
     }
   );
 
-  // When adding a comment, invalidate the right queries
   const addCommentMutation = useMutation(
     (commentText) => postApi.createComment(postId, commentText),
     {
