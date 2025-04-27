@@ -42,6 +42,7 @@ export default function LoginPage() {
     initialValues: {
       email: '',
       password: '',
+      Phone Number: '',
     },
     validationSchema,
     onSubmit: async (values) => {
