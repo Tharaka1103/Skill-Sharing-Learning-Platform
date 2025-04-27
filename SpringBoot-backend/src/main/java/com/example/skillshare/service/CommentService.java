@@ -36,7 +36,6 @@ public class CommentService {
     public Page<Comment> getCommentsByPostId(String postId, Pageable pageable) {
         Page<Comment> commentsPage = commentRepository.findByPostIdOrderByCreatedAtDesc(postId, pageable);
 
-        // Enrich comments with user information
         List<Comment> enrichedComments = commentsPage.getContent().stream()
                 .map(comment -> {
                     User user = userRepository.findById(comment.getUserId())
