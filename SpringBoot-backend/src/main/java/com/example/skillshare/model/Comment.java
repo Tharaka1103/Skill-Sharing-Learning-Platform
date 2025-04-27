@@ -22,7 +22,6 @@ public class Comment {
     private Date createdAt = new Date();
     private Date updatedAt = new Date();
 
-    // Transient fields for user information
     @Transient
     private String userName;
     @Transient
