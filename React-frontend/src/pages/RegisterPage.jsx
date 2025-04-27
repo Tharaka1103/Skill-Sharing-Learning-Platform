@@ -3,7 +3,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Container, Box, Typography, TextField, Button, Grid,
   Link, Paper, Divider, Alert, CircularProgress,
-  Stepper, Step, StepLabel,Home
+  Stepper, Step, StepLabel
 } from '@mui/material';
 import { Google as GoogleIcon, GitHub as GitHubIcon } from '@mui/icons-material';
 import { useFormik } from 'formik';
