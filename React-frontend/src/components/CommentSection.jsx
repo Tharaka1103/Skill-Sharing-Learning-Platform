@@ -42,10 +42,8 @@ export default function CommentSection({ postId }) {
     (commentText) => postApi.createComment(postId, commentText),
     {
       onSuccess: () => {
-        // Invalidate comment data
         queryClient.invalidateQueries(['comments', postId]);
         
-        // Also invalidate queries that might show comment counts
         queryClient.invalidateQueries(['post', postId]);
         queryClient.invalidateQueries(['userPosts']);
         queryClient.invalidateQueries(['feed']);
@@ -105,7 +103,6 @@ export default function CommentSection({ postId }) {
   const handleSubmitComment = (e) => {
     e.preventDefault();
     if (commentText.trim()) {
-      // Create a proper comment object with content property
       addCommentMutation.mutate({ content: commentText.trim() });
     }
   };
