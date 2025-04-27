@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Paper, Typography, Box, Chip, Button, IconButton,
-  LinearProgress, Divider
+  LinearProgress, Divider, House
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -96,7 +96,7 @@ export default function LearningProgressCard({ progress, isOwner, onEdit, onDele
       {/* Progress bar */}
       <Box sx={{ mt: 2, mb: 1 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-          <Typography variant="body2">Completion</Typography>
+          <Typography variant="body2">Completion </Typography>
           <Typography variant="body2">{progress.completionPercentage || 0}%</Typography>
         </Box>
         <LinearProgress 
